@@ -25,6 +25,14 @@ root.title("Minesweeper")
 root.columnconfigure(0, weight = 1)
 root.rowconfigure(0, weight = 1)
 
+image_unpressed = PhotoImage(file = "./textures/unpressed.png")
+image_face_happy = PhotoImage(file = "./textures/face_happy.png")
+image_face_happy = image_face_happy.zoom(20)
+image_face_happy = image_face_happy.subsample(32)
+image_face_dead = PhotoImage(file = "./textures/face_dead.png")
+image_face_dead = image_face_dead.zoom(10)
+image_face_dead = image_face_dead.subsample(32)
+
 main_menu_frame = Frame(root)
 main_menu_frame.grid(row = 0, column = 0, sticky = 'news')
 main_menu_frame.columnconfigure(0, weight = 1)
@@ -39,9 +47,6 @@ game_name_label = Label(game_name_frame, text = "Minesweeper")
 game_name_label.grid(row = 0, padx = 20, pady = 10, column = 0)
 game_name_label.config(font=("Courier", 30))
 
-image_face_happy = PhotoImage(file = "./textures/face_happy.png")
-image_face_happy = image_face_happy.zoom(20)
-image_face_happy = image_face_happy.subsample(32)
 menu_image = Label(game_name_frame, image = image_face_happy)
 menu_image.grid(row = 1, column = 0)
 
@@ -92,15 +97,13 @@ def mainMenu(itself):
 
 def gameOver(itself, reason):
     itself.grid_forget()
+
+    root.geometry("600x600")
     final_screen_frame = Frame(root)
     final_screen_frame.grid(row = 0, column = 0, sticky = 'we')
-    final_screen_frame.rowconfigure(0, weight = 1)
     final_screen_frame.columnconfigure(0, weight = 1)
 
     final_screen_label = Label(final_screen_frame, font = "Courier 20")
-    image_face_dead = PhotoImage(file = "./textures/face_dead.png")
-    image_face_dead = image_face_dead.zoom(10)
-    image_face_dead = image_face_dead.subsample(32)
     final_screen_image = Label(final_screen_frame, image = image_face_dead)
 
     if(reason == 'time'):
@@ -139,23 +142,47 @@ def startGame():
         if time_limit_entry.get() != "":
             time_limit = int(time_limit_entry.get())
 
+        root.geometry("")
         main_game_frame = Frame(root)
         main_game_frame.grid(row = 0, column = 0, sticky = 'news')
+        main_game_frame.rowconfigure(0, weight = 1)
+        main_game_frame.rowconfigure(1, weight = 1)
+        main_game_frame.columnconfigure(0, weight = 1)
 
-        time_limit_label = Label(main_game_frame, text = '{:02}:{:02}'.format(time_limit%3600//60, time_limit%60))
-        time_limit_label.grid(row = 0, column = 0)
+        top_frame = Frame(main_game_frame)
+        top_frame.grid(row = 0, column = 0, sticky = 'n')
+
+        time_limit_label = Label(top_frame, font = "Arial 20", text = 'Time: {:02}:{:02}'.format(time_limit%3600//60, time_limit%60))
+        time_limit_label.grid(row = 0, column = 0, pady = 10)
 
         def countdown():
             global time_limit
             while time_limit > 0:
                 time.sleep(1)
                 time_limit -= 1
-                time_limit_label['text'] = '{:02}:{:02}'.format(time_limit%3600//60, time_limit%60)
+                time_limit_label['text'] = 'Time: {:02}:{:02}'.format(time_limit%3600//60, time_limit%60)
             gameOver(main_game_frame, "time")
 
         countdown_thread = threading.Thread(target=countdown)
         countdown_thread.daemon = True
         countdown_thread.start()
+
+        game_frame = Frame(main_game_frame)
+        game_frame.grid(row = 1, column = 0, padx = 20, pady = 20, sticky = 'n')
+
+        button_matrix = [[0 for i in range(table_width)] for y in range(table_height)] 
+
+        def click(button):
+            x = button.grid_info()['row']
+            y = button.grid_info()['column']
+            print("Clicked at %d %d"%(x, y))
+            button['state'] = DISABLED
+
+        for i in range(table_height):
+            for j in range(table_width):
+                button_matrix[i][j] = Button(game_frame, image = image_unpressed)
+                button_matrix[i][j]['command'] = lambda button = button_matrix[i][j]: click(button)
+                button_matrix[i][j].grid(row = i, column = j)
 
 start_game_button = Button(start_game_frame, text = "Start", font = "Arial 15", command = startGame)
 start_game_button.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = "we") 
