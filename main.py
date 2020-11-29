@@ -6,6 +6,8 @@ import random
 
 time_limit = 0
 stop_event = False
+free_cells = 0
+total_free_cells = 0
 
 class Entry_number(Entry):
     def __init__(self, master=None, **kwargs):
@@ -120,14 +122,17 @@ def gameOver(itself, reason):
     final_screen_frame.columnconfigure(0, weight = 1)
 
     final_screen_label = Label(final_screen_frame, font = "Courier 20")
-    final_screen_image = Label(final_screen_frame, image = image_face_dead)
+    final_screen_image = Label(final_screen_frame)
 
     if reason == 'time':
         final_screen_label['text'] = "You lost! Time ran down"
-        final_screen_image.image = image_face_dead
+        final_screen_image['image'] = image_face_dead
     elif reason == 'bomb':
         final_screen_label['text'] = "You lost! You hit a bomb"
-        final_screen_image.image = image_face_dead
+        final_screen_image['image'] = image_face_dead
+    elif reason == 'won':
+        final_screen_label['text'] = "You won!"
+        final_screen_image['image'] = image_face_happy
     
     final_screen_label.grid(row = 0, column = 0)
     final_screen_image.grid(row = 1, column = 0)
@@ -145,6 +150,12 @@ def startGame():
         messagebox.showerror("Error", "Height has to be positive")
     elif table_size_entry_width.get() != "" and int(table_size_entry_width.get()) == 0:
         messagebox.showerror("Error", "Width has to be positive")
+    elif table_size_entry_height.get() == "" and table_size_entry_width.get() == "" and nr_bombs_entry.get() != "" and int(nr_bombs_entry.get()) > 10 * 10:
+            messagebox.showerror("Error", "Nr of bombs exceeds table size")
+    elif table_size_entry_height.get() != "" and table_size_entry_width.get() != "" and nr_bombs_entry.get() != "" and int(nr_bombs_entry.get()) > int(table_size_entry_height.get()) * int(table_size_entry_width.get()):
+            messagebox.showerror("Error", "Nr of bombs exceeds table size")
+    elif table_size_entry_height.get() != "" and table_size_entry_width.get() != "" and nr_bombs_entry.get() == "" and 10 > int(table_size_entry_height.get()) * int(table_size_entry_width.get()):
+            messagebox.showerror("Error", "Nr of bombs exceeds table size")
     else:
         main_menu_frame.grid_forget()
 
@@ -153,6 +164,8 @@ def startGame():
         table_width = 10
         global time_limit
         global stop_event
+        global free_cells
+        global total_free_cells
         stop_event = False
         time_limit = 60
         if table_size_entry_height.get() != "" and table_size_entry_width.get() != "":
@@ -162,6 +175,9 @@ def startGame():
             nr_bombs = int(nr_bombs_entry.get())
         if time_limit_entry.get() != "":
             time_limit = int(time_limit_entry.get())
+
+        total_free_cells = (table_height * table_width) - nr_bombs
+        free_cells = 0
 
         available_positions = []
         for i in range(table_height):
@@ -173,6 +189,7 @@ def startGame():
         for i in range(nr_bombs):
             r = random.randint(0, len(available_positions) - 1)
             bomb_matrix[available_positions[r][0]][available_positions[r][1]] = 1
+            del available_positions[r]
 
         root.geometry("")
         main_game_frame = Frame(root)
@@ -207,9 +224,12 @@ def startGame():
         button_matrix = [[0 for i in range(table_width)] for y in range(table_height)] 
 
         def walk(x, y):
+            global free_cells
+
             if bomb_matrix[x][y] == 1:
                 gameOver(main_game_frame, 'bomb')
             elif button_matrix[x][y]['relief'] != 'sunken' and flag_matrix[x][y] == 0:
+                free_cells += 1
                 direct_x = [-1, -1, -1,  0, 0,  1, 1, 1]
                 direct_y = [ 0, -1,  1, -1, 1, -1, 0, 1]
                 nr_bombs = 0
@@ -232,9 +252,13 @@ def startGame():
 
 
         def click(button):
+            global free_cells
+            global total_free_cells
             x = button.grid_info()['row']
             y = button.grid_info()['column']
             walk(x, y)
+            if free_cells == total_free_cells and total_free_cells != 0:
+                gameOver(main_game_frame, 'won')
 
         def right_click(event):
             x = event.widget.grid_info()['row']
