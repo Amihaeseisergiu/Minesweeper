@@ -48,6 +48,11 @@ image_numbers = [
     PhotoImage(file = "./textures/8.png"),
 ]
 image_flag = PhotoImage(file = "./textures/flag.png")
+image_bombpressed = PhotoImage(file = "./textures/bombpressed.png")
+image_bombred = PhotoImage(file = "./textures/bombred.png")
+image_bombx = PhotoImage(file = "./textures/bombx.png")
+image_win_button = PhotoImage(file = "./textures/win_button.png")
+image_lose_button = PhotoImage(file = "./textures/lose_button.png")
 
 main_menu_frame = Frame(root)
 main_menu_frame.grid(row = 0, column = 0, sticky = 'news')
@@ -109,37 +114,8 @@ start_game_frame.rowconfigure(0, weight = 1)
 
 def mainMenu(itself):
     itself.grid_forget()
-    main_menu_frame.grid(row = 0, column = 0, sticky = 'news')
-
-def gameOver(itself, reason):
-    itself.grid_forget()
-
-    global stop_event
-    stop_event = True
     root.geometry("600x600")
-    final_screen_frame = Frame(root)
-    final_screen_frame.grid(row = 0, column = 0, sticky = 'we')
-    final_screen_frame.columnconfigure(0, weight = 1)
-
-    final_screen_label = Label(final_screen_frame, font = "Courier 20")
-    final_screen_image = Label(final_screen_frame)
-
-    if reason == 'time':
-        final_screen_label['text'] = "You lost! Time ran down"
-        final_screen_image['image'] = image_face_dead
-    elif reason == 'bomb':
-        final_screen_label['text'] = "You lost! You hit a bomb"
-        final_screen_image['image'] = image_face_dead
-    elif reason == 'won':
-        final_screen_label['text'] = "You won!"
-        final_screen_image['image'] = image_face_happy
-    
-    final_screen_label.grid(row = 0, column = 0)
-    final_screen_image.grid(row = 1, column = 0)
-
-    main_menu_button = Button(final_screen_frame, font = "Arial 15", text = "Main Menu")
-    main_menu_button['command'] = lambda itself = final_screen_frame: mainMenu(itself)
-    main_menu_button.grid(row = 2, column = 0, pady = 10)
+    main_menu_frame.grid(row = 0, column = 0, sticky = 'news')
 
 def startGame():
     if table_size_entry_height.get() == "" and table_size_entry_width.get() != "":
@@ -204,6 +180,35 @@ def startGame():
         time_limit_label = Label(top_frame, font = "Arial 20", text = 'Time: {:02}:{:02}'.format(time_limit%3600//60, time_limit%60))
         time_limit_label.grid(row = 0, column = 0, pady = 10)
 
+        game_frame = Frame(main_game_frame)
+        game_frame.grid(row = 1, column = 0, padx = 20, pady = 20, sticky = 'n')
+
+        button_matrix = [[0 for i in range(table_width)] for y in range(table_height)] 
+
+        def finalTable(x, y, reason):
+            global stop_event
+            stop_event = True
+
+            time_limit_label.grid_forget()
+            reset_button = Button(top_frame)
+            reset_button.grid(row = 0, column = 0, pady = 14)
+            reset_button['command'] = lambda itself = main_game_frame: mainMenu(itself)
+
+            if reason == 'lost' or reason == 'time':
+                reset_button['image'] = image_lose_button
+            elif reason == 'won':
+                reset_button['image'] = image_win_button
+
+            for i in range(table_height):
+                for j in range(table_width):
+                    button_matrix[i][j]['state'] = DISABLED
+                    if bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 1:
+                        button_matrix[i][j]['image'] = image_bombx
+                    elif bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 0:
+                        button_matrix[i][j]['image'] = image_bombpressed
+            if bomb_matrix[x][y] == 1 and reason != 'time':
+                button_matrix[x][y]['image'] = image_bombred
+
         def countdown():
             global time_limit
             global stop_event
@@ -212,22 +217,18 @@ def startGame():
                 time_limit -= 1
                 time_limit_label['text'] = 'Time: {:02}:{:02}'.format(time_limit%3600//60, time_limit%60)
             if not stop_event:
-                gameOver(main_game_frame, "time")
+                finalTable(0, 0, 'time')
 
         countdown_thread = threading.Thread(target=countdown)
         countdown_thread.daemon = True
         countdown_thread.start()
 
-        game_frame = Frame(main_game_frame)
-        game_frame.grid(row = 1, column = 0, padx = 20, pady = 20, sticky = 'n')
-
-        button_matrix = [[0 for i in range(table_width)] for y in range(table_height)] 
-
         def walk(x, y):
             global free_cells
 
             if bomb_matrix[x][y] == 1:
-                gameOver(main_game_frame, 'bomb')
+                finalTable(x, y, 'lost')
+                #gameOver(main_game_frame, 'bomb')
             elif button_matrix[x][y]['relief'] != 'sunken' and flag_matrix[x][y] == 0:
                 free_cells += 1
                 direct_x = [-1, -1, -1,  0, 0,  1, 1, 1]
@@ -258,7 +259,7 @@ def startGame():
             y = button.grid_info()['column']
             walk(x, y)
             if free_cells == total_free_cells and total_free_cells != 0:
-                gameOver(main_game_frame, 'won')
+                finalTable(x, y, 'won')
 
         def right_click(event):
             x = event.widget.grid_info()['row']
@@ -268,9 +269,11 @@ def startGame():
                 if flag_matrix[x][y] == 1:
                     flag_matrix[x][y] = 0
                     button_matrix[x][y]['image'] = image_unpressed
+                    button_matrix[x][y]['command'] = lambda button = button_matrix[x][y]: click(button)
                 else:
                     flag_matrix[x][y] = 1
                     button_matrix[x][y]['image'] = image_flag
+                    button_matrix[x][y]['command'] = 0
 
         for i in range(table_height):
             for j in range(table_width):
