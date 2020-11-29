@@ -211,7 +211,7 @@ add left click and right click events, aswell as images, to it:
     for i in range(table_height):
         for j in range(table_width):
             button_matrix[i][j] = Button(game_frame,
-                                         image=image_unpressed)
+                                        image=image_unpressed)
             button_matrix[i][j]['command'] =\
                 lambda button = button_matrix[i][j]: click(button)
             button_matrix[i][j].bind("<Button-2>", right_click)
@@ -244,50 +244,50 @@ then the recursive function will be called for every neighbour:
 
 ::
     def walk(x, y):
-            global free_cells
-            global first_move
+        global free_cells
+        global first_move
 
-            if bomb_matrix[x][y] == 1:
-                if first_move:
-                    first_move = False
-                    bomb_matrix[x][y] = 0
-                    r = random.randint(0, len(available_positions) - 1)
-                    bomb_matrix[
-                         available_positions[r][0]
-                       ][available_positions[r][1]] = 1
-                    walk(x, y)
-                else:
-                    finalTable(x, y, 'lost')
-            elif button_matrix[x][y]['relief'] != 'sunken'\
-                    and flag_matrix[x][y] == 0:
+        if bomb_matrix[x][y] == 1:
+            if first_move:
+                first_move = False
+                bomb_matrix[x][y] = 0
+                r = random.randint(0, len(available_positions) - 1)
+                bomb_matrix[
+                     available_positions[r][0]
+                   ][available_positions[r][1]] = 1
+                walk(x, y)
+            else:
+                finalTable(x, y, 'lost')
+        elif button_matrix[x][y]['relief'] != 'sunken'\
+                and flag_matrix[x][y] == 0:
 
-                free_cells += 1
-                direct_x = [-1, -1, -1,  0, 0,  1, 1, 1]
-                direct_y = [0, -1,  1, -1, 1, -1, 0, 1]
-                nr_bombs = 0
+            free_cells += 1
+            direct_x = [-1, -1, -1,  0, 0,  1, 1, 1]
+            direct_y = [0, -1,  1, -1, 1, -1, 0, 1]
+            nr_bombs = 0
+            for i in range(len(direct_x)):
+                if x + direct_x[i] < table_height\
+                        and x + direct_x[i] >= 0\
+                        and y + direct_y[i] < table_width\
+                        and y + direct_y[i] >= 0:
+
+                    if bomb_matrix[x + direct_x[i]][y + direct_y[i]] == 1:
+                        nr_bombs += 1
+
+            if nr_bombs == 0:
+                button_matrix[x][y]['command'] = 0
+                button_matrix[x][y]['relief'] = 'sunken'
+                button_matrix[x][y]['image'] = image_pressed
                 for i in range(len(direct_x)):
                     if x + direct_x[i] < table_height\
                             and x + direct_x[i] >= 0\
                             and y + direct_y[i] < table_width\
                             and y + direct_y[i] >= 0:
-
-                        if bomb_matrix[x + direct_x[i]][y + direct_y[i]] == 1:
-                            nr_bombs += 1
-
-                if nr_bombs == 0:
-                    button_matrix[x][y]['command'] = 0
-                    button_matrix[x][y]['relief'] = 'sunken'
-                    button_matrix[x][y]['image'] = image_pressed
-                    for i in range(len(direct_x)):
-                        if x + direct_x[i] < table_height\
-                                and x + direct_x[i] >= 0\
-                                and y + direct_y[i] < table_width\
-                                and y + direct_y[i] >= 0:
-                            walk(x + direct_x[i], y + direct_y[i])
-                else:
-                    button_matrix[x][y]['command'] = 0
-                    button_matrix[x][y]['relief'] = 'sunken'
-                    button_matrix[x][y]['image'] = image_numbers[nr_bombs - 1]
+                        walk(x + direct_x[i], y + direct_y[i])
+            else:
+                button_matrix[x][y]['command'] = 0
+                button_matrix[x][y]['relief'] = 'sunken'
+                button_matrix[x][y]['image'] = image_numbers[nr_bombs - 1]
 
 When the game has ended the program will display the final board.  It verifies
 the buttons grid against the bomb matrix and the flag matrix in order to
@@ -296,30 +296,30 @@ countdown timer to allow the user to return to the Main Menu:
 
 ::
     def finalTable(x, y, reason):
-            global stop_event
-            stop_event = True
+        global stop_event
+        stop_event = True
 
-            time_limit_label.grid_forget()
-            reset_button = Button(top_frame)
-            reset_button.grid(row=0, column=0, pady=14)
-            reset_button['command'] = \
-                lambda itself = main_game_frame: mainMenu(itself)
+        time_limit_label.grid_forget()
+        reset_button = Button(top_frame)
+        reset_button.grid(row=0, column=0, pady=14)
+        reset_button['command'] = \
+            lambda itself = main_game_frame: mainMenu(itself)
 
-            if reason == 'lost' or reason == 'time':
-                reset_button['image'] = image_lose_button
-            elif reason == 'won':
-                reset_button['image'] = image_win_button
+        if reason == 'lost' or reason == 'time':
+            reset_button['image'] = image_lose_button
+        elif reason == 'won':
+            reset_button['image'] = image_win_button
 
-            for i in range(table_height):
-                for j in range(table_width):
-                    button_matrix[i][j]['relief'] = 'sunken'
-                    button_matrix[i][j]['command'] = 0
-                    if bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 1:
-                        button_matrix[i][j]['image'] = image_bombx
-                    elif bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 0:
-                        button_matrix[i][j]['image'] = image_bombpressed
-            if bomb_matrix[x][y] == 1 and reason != 'time':
-                button_matrix[x][y]['image'] = image_bombred
+        for i in range(table_height):
+            for j in range(table_width):
+                button_matrix[i][j]['relief'] = 'sunken'
+                button_matrix[i][j]['command'] = 0
+                if bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 1:
+                    button_matrix[i][j]['image'] = image_bombx
+                elif bomb_matrix[i][j] == 1 and flag_matrix[i][j] == 0:
+                    button_matrix[i][j]['image'] = image_bombpressed
+        if bomb_matrix[x][y] == 1 and reason != 'time':
+            button_matrix[x][y]['image'] = image_bombred
 
 In order to display the time, a daemon thread is launched that sleeps every
 one second and afterwards updates a global variable and the timer label:
