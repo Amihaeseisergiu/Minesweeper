@@ -274,8 +274,7 @@ def startGame():
             global first_move
 
             if bomb_matrix[x][y] == 1:
-                if first_move:
-                    first_move = False
+                if first_move == True:
                     bomb_matrix[x][y] = 0
                     r = random.randint(0, len(available_positions) - 1)
                     bomb_matrix[
@@ -318,9 +317,11 @@ def startGame():
         def click(button):
             global free_cells
             global total_free_cells
+            global first_move
             x = button.grid_info()['row']
             y = button.grid_info()['column']
             walk(x, y)
+            first_move = False
             if free_cells == total_free_cells and total_free_cells != 0:
                 finalTable(x, y, 'won')
 
