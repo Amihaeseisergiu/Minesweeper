@@ -12,6 +12,10 @@ first_move = True
 
 
 class Entry_number(Entry):
+    """
+    A class that was used in the Main Menu in order to make Entry Boxes
+    that don't accept invalid inputs (other characters other than digits).
+    """
     def __init__(self, master=None, **kwargs):
         self.var = StringVar()
         Entry.__init__(self, master, textvariable=self.var, **kwargs)
@@ -24,6 +28,15 @@ class Entry_number(Entry):
             self.old_value = self.get()
         else:
             self.set(self.old_value)
+
+"""
+The main scope was used to initialize all the widgets and to place them
+inside frames to be easier to access later on.
+
+The widgets are aligned in a grid.  The tkinter class Frame was used in
+order to align multiple elements.  When the screen is resized, the widgets
+will change their position accordingly.
+"""
 
 root = Tk()
 root.geometry("600x600")
@@ -120,12 +133,35 @@ start_game_frame.rowconfigure(0, weight=1)
 
 
 def mainMenu(itself):
+    """
+    A function that gets called in order to return to the main
+    menu.
+
+    The Main Menu Frame is kept in memory and readded once the
+    user clicks the Main Menu Button.
+    """
     itself.grid_forget()
     root.geometry("600x600")
     main_menu_frame.grid(row=0, column=0, sticky='news')
 
 
 def startGame():
+    """
+    The function that is called when the user click the Start Game button.
+
+    When the user starts a game, firstly the program will check if the given
+    inputs are valid.  Otherwise an error message will be shown using the
+    "messagebox" class from tkinter.
+
+    If all the inputs are valid, the game will generate a matrix where it will
+    place the bombs.  First all the grid positions will be added to a list then
+    the program iterate over that list, picking a random position then removing
+    that coordinates from the list.  This method was used in order to eliminate
+    the posibility that two bombs can be placed in the same position.
+
+    Then the program will create a grid of buttons representing the cells, then
+    add left click and right click events, aswell as images, to it.
+    """
     if table_size_entry_height.get() == ""\
             and table_size_entry_width.get() != "":
 
@@ -229,6 +265,16 @@ def startGame():
                          for y in range(table_height)]
 
         def finalTable(x, y, reason):
+            """
+            The function that displays the final board after the game has
+            ended.
+
+            When the game has ended the program will display the final board.
+            It verifies the buttons grid against the bomb matrix and the flag
+            matrix in order to correcly place the images.  An additional
+            button will be placed instead of the countdown timer to allow the
+            user to return to the Main Menu.
+            """
             global stop_event
             stop_event = True
 
@@ -255,6 +301,13 @@ def startGame():
                 button_matrix[x][y]['image'] = image_bombred
 
         def countdown():
+            """
+            The function for the daemon thread.
+
+            In order to display the time, a daemon thread is launched that
+            sleeps every one second and afterwards updates a global variable
+            and the timer label.
+            """
             global time_limit
             global stop_event
             while time_limit > 0 and not stop_event:
@@ -270,11 +323,27 @@ def startGame():
         countdown_thread.start()
 
         def walk(x, y):
+            """
+            The function that walks the board recursively to reveal
+            positions.
+
+            To walk the board, first the program checks if the cell
+            the player has clicked on contains a bomb.  If it does
+            indeed contain a bomb, then the final board will be shown
+            and the game will end.  An extra check will be performed
+            to move the bomb in another cell if its the player's first
+            move.  If the cell does not contain a bomb then the program
+            will verify the number of neighbouring bombs.  If the number
+            of bombs is higher than 0, then the recursive function will
+            stop and only update the current position with the number of
+            bombs.  If it is 0, then the recursive function will be
+            called for every neighbour
+            """
             global free_cells
             global first_move
 
             if bomb_matrix[x][y] == 1:
-                if first_move == True:
+                if first_move:
                     bomb_matrix[x][y] = 0
                     r = random.randint(0, len(available_positions) - 1)
                     bomb_matrix[
@@ -315,6 +384,16 @@ def startGame():
                     button_matrix[x][y]['image'] = image_numbers[nr_bombs - 1]
 
         def click(button):
+            """
+            The function that gets called when the user left clicks on a
+            button.
+
+            When the left clicks a button, it will trigger the left click
+            event that will call a function to recursively walk the board
+            in order to expand cells.  After every walk the program checks
+            the number of discovered cells in order to see if the user has
+            won.
+            """
             global free_cells
             global total_free_cells
             global first_move
@@ -326,6 +405,15 @@ def startGame():
                 finalTable(x, y, 'won')
 
         def right_click(event):
+            """
+            The function that gets called when the user right clicks on
+            a button.
+
+            When the user right clicks a button, that cell will be marked
+            with a flag. If a flag is already present, it will be removed.
+            Flags stop the propagation of the walk function on that
+            respective cell.
+            """
             x = event.widget.grid_info()['row']
             y = event.widget.grid_info()['column']
 
